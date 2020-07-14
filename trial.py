@@ -84,10 +84,10 @@ def get_image_size(mat_file: numpy.ndarray) -> tuple:
     return (width, height)
 
 
-def concatenate_tile(list_2d: list) -> numpy.ndarray:
+def concatenate_tile(list_3d: list) -> numpy.ndarray:
 
     # mat_file の2次元配列を受け取り、タイル状に連結します。
-    return cv2.vconcat([cv2.hconcat(list_1d) for list_1d in list_2d])
+    return cv2.vconcat([cv2.hconcat(list_2d) for list_2d in list_3d])
 
 
 # mat_file = read_image('./100x100-dog.png')
@@ -118,26 +118,28 @@ for image in target_images:
 
 # ブランク画像です。
 # NOTE: 黒画像なら numpy.zeros((100, 100, 3), numpy.uint8)
-blank_mat_file = numpy.ones((100, 100, 3), numpy.uint8) * 255
+blank_image = {
+    'mat': numpy.ones((100, 100, 3), numpy.uint8) * 255,
+}
 
 # 各画像のサイズが100x100であることを確認します。
 # NOTE: 連結するためにはサイズがあっていないといけないらしい。
 for image in target_images:
     assert get_image_size(image['mat']) == (100, 100), '100x100じゃない画像が紛れ込んでいます。'
 
-# 4x4の mat ファイルリストを作ります。
-# ひとまず2次元配列にします。
-mat_list_2d = [dic['mat'] for dic in target_images]
-# 4x4 3次元配列にします。
+# target_images を4x4の3次元リストに変換します。
+target_images_3d = []
 mat_list_3d = []
 for vertical_index in range(4):
+    target_images_3d.append([])
     mat_list_3d.append([])
     for horizontal_index in range(4):
         # 空きマスにもブランク画像を
-        mat_file = mat_list_2d.pop(0) if len(mat_list_2d) else blank_mat_file
-        mat_list_3d[vertical_index].append(mat_file)
+        _ = target_images.pop(0) if len(target_images) else blank_image
+        target_images_3d[vertical_index].append(_)
+        mat_list_3d[vertical_index].append(_['mat'])
 
-# 4x4で連結します。
+# mat ファイルを4x4で連結します。
 concatenated_mat_file = concatenate_tile(mat_list_3d)
 # 100px の4x4なので400x400になります。
 # print(get_image_size(concatenated_mat_file))
@@ -227,3 +229,31 @@ for result in detection_results:
     cv2.rectangle(concatenated_mat_file,
                   left_top, right_bottom, (255, 0, 0))
 show_image(concatenated_mat_file)
+
+# target_images それぞれの画像と faceId を結びつけます。 faceRectangle の座標が目印となります。
+# target_image['faceId'] を埋めるということ。
+for result in detection_results:
+    face_rectangle = result['faceRectangle']
+
+    # x 軸で何番目の画像?
+    # NOTE: 画像サイズが100x100 なので、左上の x 座標 / 100 で切り捨て除算を行えば、 x 軸のインデックスになります。
+    horizontal_index = face_rectangle['left'] // 100
+    # y 軸で何番目の画像?
+    vertical_index = face_rectangle['top'] // 100
+
+    # 座標から求めた、この faceId に対応する画像です。
+    target_image = target_images_3d[vertical_index][horizontal_index]
+    target_image['faceId'] = result['faceId']
+
+# 3次元配列だとこのあとは扱いづらいから2次元配列に戻します。
+# HACK: 3次元 -> 2次元のシンプルなやり方があるような気がする。
+# HACK: 最初から配列を numpy.array で扱っておればいけそう。
+target_images = []
+for lis in target_images_3d:
+    target_images.extend(lis)
+
+# 紐付けの確認。
+for image in target_images:
+    print(image['path'] if 'path' in image else None,
+          '---',
+          image['faceId'] if 'faceId' in image else None)
