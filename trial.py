@@ -16,7 +16,6 @@ import numpy
 import requests
 import dotenv
 import os
-from pprint import pprint
 
 
 # .env で環境変数を取得する場合に対応します。
@@ -94,18 +93,28 @@ def concatenate_tile(list_2d: list) -> numpy.ndarray:
 # mat_file = read_image('./100x100-dog.png')
 # show_image(mat_file)
 
-mat_files = [
-    read_image('./100x100-dog.png'),
-    read_image('./100x100-egc.png'),
-    read_image('./100x100-egc2.png'),
-    read_image('./100x100-kbt.png'),
-    read_image('./100x100-ymzk.png'),
-    read_image('./100x100-dog.png'),
-    read_image('./100x100-egc.png'),
-    read_image('./100x100-egc2.png'),
-    read_image('./100x100-kbt.png'),
-    read_image('./100x100-ymzk.png'),
+# 検証する画像のリストです。
+target_images = [
+    {
+        'path': './100x100-dog.png',
+        'mat': None,  # imread により得られる予定。
+        'faceId': None,  # detect API により得られる予定。
+        'candidate': None,  # identify API により得られる予定。
+    },
+    {'path': './100x100-egc.png'},
+    {'path': './100x100-egc2.png'},
+    {'path': './100x100-kbt.png'},
+    {'path': './100x100-ymzk.png'},
+    {'path': './100x100-dog.png'},
+    {'path': './100x100-egc.png'},
+    {'path': './100x100-egc2.png'},
+    {'path': './100x100-kbt.png'},
+    {'path': './100x100-ymzk.png'},
 ]
+
+# 各画像について mat 形式を取得します。
+for image in target_images:
+    image['mat'] = read_image(image['path'])
 
 # ブランク画像です。
 # NOTE: 黒画像なら numpy.zeros((100, 100, 3), numpy.uint8)
@@ -113,20 +122,23 @@ blank_mat_file = numpy.ones((100, 100, 3), numpy.uint8) * 255
 
 # 各画像のサイズが100x100であることを確認します。
 # NOTE: 連結するためにはサイズがあっていないといけないらしい。
-for mat_file in mat_files:
-    assert get_image_size(mat_file) == (100, 100), '100x100じゃない画像が紛れ込んでいます。'
+for image in target_images:
+    assert get_image_size(image['mat']) == (100, 100), '100x100じゃない画像が紛れ込んでいます。'
 
-# 配列を4x4にします。
-list_2d = []
+# 4x4の mat ファイルリストを作ります。
+# ひとまず2次元配列にします。
+mat_list_2d = [dic['mat'] for dic in target_images]
+# 4x4 3次元配列にします。
+mat_list_3d = []
 for vertical_index in range(4):
-    list_2d.append([])
+    mat_list_3d.append([])
     for horizontal_index in range(4):
         # 空きマスにもブランク画像を
-        mat_file = mat_files.pop(0) if len(mat_files) else blank_mat_file
-        list_2d[vertical_index].append(mat_file)
+        mat_file = mat_list_2d.pop(0) if len(mat_list_2d) else blank_mat_file
+        mat_list_3d[vertical_index].append(mat_file)
 
 # 4x4で連結します。
-concatenated_mat_file = concatenate_tile(list_2d)
+concatenated_mat_file = concatenate_tile(mat_list_3d)
 # 100px の4x4なので400x400になります。
 # print(get_image_size(concatenated_mat_file))
 # show_image(concatenated_mat_file)
