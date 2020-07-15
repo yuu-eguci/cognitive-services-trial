@@ -57,9 +57,9 @@ def read_image(image_path: str) -> numpy.ndarray:
 
     # 画像を読み込みます。
     # NOTE: imread により画像が mat 形式のデータになります。
-    # NOTE: mat ってのは numpy の2,3次元配列です。
+    # NOTE: mat ってのは numpy の1,2次元配列です。
     # NOTE: type(mat) -> <class 'numpy.ndarray'>
-    # NOTE: 2次元のことを channel といい、3次元のことを dimension といいます。
+    # NOTE: 1次元のことを channel といい、2次元のことを dimension といいます。
     mat = cv2.imread(image_path)
 
     # NOTE: 'not mat' とか書くと The truth value of an array with
@@ -88,10 +88,10 @@ def get_image_size(mat_file: numpy.ndarray) -> tuple:
     return (width, height)
 
 
-def concatenate_tile(list_3d: list) -> numpy.ndarray:
+def concatenate_tile(list_2d: list) -> numpy.ndarray:
 
-    # mat_file の2次元配列を受け取り、タイル状に連結します。
-    return cv2.vconcat([cv2.hconcat(list_2d) for list_2d in list_3d])
+    # mat_file の1次元配列を受け取り、タイル状に連結します。
+    return cv2.vconcat([cv2.hconcat(list_1d) for list_1d in list_2d])
 
 
 # mat_file = read_image('./100x100-dog.png')
@@ -131,20 +131,20 @@ blank_image = {
 for image in target_images:
     assert get_image_size(image['mat']) == (100, 100), '100x100じゃない画像が紛れ込んでいます。'
 
-# target_images を4x4の3次元リストに変換します。
-target_images_3d = []
-mat_list_3d = []
+# target_images を4x4の2次元リストに変換します。
+target_images_2d = []
+mat_list_2d = []
 for vertical_index in range(4):
-    target_images_3d.append([])
-    mat_list_3d.append([])
+    target_images_2d.append([])
+    mat_list_2d.append([])
     for horizontal_index in range(4):
         # 空きマスにもブランク画像を
         _ = target_images.pop(0) if len(target_images) else blank_image
-        target_images_3d[vertical_index].append(_)
-        mat_list_3d[vertical_index].append(_['mat'])
+        target_images_2d[vertical_index].append(_)
+        mat_list_2d[vertical_index].append(_['mat'])
 
 # mat ファイルを4x4で連結します。
-concatenated_mat_file = concatenate_tile(mat_list_3d)
+concatenated_mat_file = concatenate_tile(mat_list_2d)
 # 100px の4x4なので400x400になります。
 # print(get_image_size(concatenated_mat_file))
 # show_image(concatenated_mat_file)
@@ -246,14 +246,14 @@ for result in detection_results:
     vertical_index = face_rectangle['top'] // 100
 
     # 座標から求めた、この faceId に対応する画像です。
-    target_image = target_images_3d[vertical_index][horizontal_index]
+    target_image = target_images_2d[vertical_index][horizontal_index]
     target_image['faceId'] = result['faceId']
 
-# 3次元配列だとこのあとは扱いづらいから2次元配列に戻します。
-# HACK: 3次元 -> 2次元のシンプルなやり方があるような気がする。
+# 2次元配列だとこのあとは扱いづらいから1次元配列に戻します。
+# HACK: 2次元 -> 1次元のシンプルなやり方があるような気がする。
 # HACK: 最初から配列を numpy.array で扱っておればいけそう。
 target_images = []
-for lis in target_images_3d:
+for lis in target_images_2d:
     target_images.extend(lis)
 
 # # 紐付けの確認。
