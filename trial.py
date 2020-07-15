@@ -16,6 +16,8 @@ import numpy
 import requests
 import dotenv
 import os
+import json
+from pprint import pprint
 
 
 # .env で環境変数を取得する場合に対応します。
@@ -47,6 +49,7 @@ def get_env(keyname: str) -> str:
 
 AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY = get_env(
     'AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY')
+PERSON_GROUP_ID = get_env('PERSON_GROUP_ID')
 
 
 def read_image(image_path: str) -> numpy.ndarray:
@@ -63,8 +66,8 @@ def read_image(image_path: str) -> numpy.ndarray:
     assert mat is not None, '画像が読み込めなかったよ。'
 
     # cv2.IMREAD_GRAYSCALE を指定すると白黒になる。
-    mat_grayscale = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    assert mat_grayscale is not None, 'グレースケール画像が読み込めなかったよ。'
+    # mat_grayscale = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    # assert mat_grayscale is not None, 'グレースケール画像が読み込めなかったよ。'
 
     return mat
 
@@ -99,7 +102,7 @@ target_images = [
         'path': './100x100-dog.png',
         'mat': None,  # imread により得られる予定。
         'faceId': None,  # detect API により得られる予定。
-        'candidate': None,  # identify API により得られる予定。
+        'candidatePersonId': None,  # identify API により得られる予定。
     },
     {'path': './100x100-egc.png'},
     {'path': './100x100-egc2.png'},
@@ -252,8 +255,104 @@ target_images = []
 for lis in target_images_3d:
     target_images.extend(lis)
 
+# # 紐付けの確認。
+# for image in target_images:
+#     print('path:', image['path'] if 'path' in image else None,
+#           '---',
+#           'faceId:', image['faceId'] if 'faceId' in image else None)
+
+
+# /face/v1.0/identify
+def face_api_identify(face_ids: list) -> dict:
+
+    url = 'https://japaneast.api.cognitive.microsoft.com/face/v1.0/identify'
+    headers = {
+        'Content-Type': 'application/json',
+        'Ocp-Apim-Subscription-Key': AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY,
+    }
+    # NOTE: payload は積載物って意味。
+    payload = {
+        'personGroupId': PERSON_GROUP_ID,
+        'faceIds': face_ids,
+        'maxNumOfCandidatesReturned': 1,
+        'confidenceThreshold': .65,
+    }
+    response = requests.post(url=url,
+                             headers=headers,
+                             data=json.dumps(payload))
+    return response.json()
+
+
+# 取得できた faceId を <PERSON_GROUP_ID> の identify に回します。
+face_ids = [
+    _['faceId']
+    for _ in target_images
+    if 'faceId' in _ and _['faceId']
+]
+# identification_results = face_api_identify(face_ids)
+# pprint(identification_results)
+identification_results = [
+    {'candidates': [{'confidence': 0.683,
+                     'personId': 'e03ce785-280c-45c9-a3d8-93a1626bc980'}],
+     'faceId': '3426a540-f9a8-4632-90a7-3c8069e888df'},
+    {'candidates': [{'confidence': 0.84629,
+                     'personId': 'e03ce785-280c-45c9-a3d8-93a1626bc980'}],
+     'faceId': '6065b3fd-c7e0-46ae-9677-543f0c87cc70'},
+    {'candidates': [{'confidence': 0.98266,
+                     'personId': '8d82ac11-ee91-4577-b165-70b6c4200621'}],
+        'faceId': 'c5fa847b-3480-440b-b6f2-2934910e95f3'},
+    {'candidates': [{'confidence': 0.73718,
+                     'personId': 'bc5a2352-852a-48f9-8150-447e3c49eb79'}],
+        'faceId': 'aee9e3aa-4aef-47f3-a823-0ca618c3f7d2'},
+    {'candidates': [{'confidence': 0.68109,
+                     'personId': 'e03ce785-280c-45c9-a3d8-93a1626bc980'}],
+        'faceId': '888475d8-2c6b-4a8c-9ffa-5838ca9bdf0b'},
+    {'candidates': [{'confidence': 0.85085,
+                     'personId': 'e03ce785-280c-45c9-a3d8-93a1626bc980'}],
+        'faceId': '7798c3fc-d87e-4aca-b183-754c0e34691f'},
+    {'candidates': [{'confidence': 0.98209,
+                     'personId': '8d82ac11-ee91-4577-b165-70b6c4200621'}],
+        'faceId': '8f04bfb5-2b15-4814-841a-b9990bee45a5'},
+    {'candidates': [{'confidence': 0.7313,
+                     'personId': 'bc5a2352-852a-48f9-8150-447e3c49eb79'}],
+        'faceId': '8b7d5ed9-add8-4016-a9be-9b7266664e0d'}
+]
+
+# 次の処理で扱いやすいよう identification_results の構造を変えます。
+identification_results_dic = {}
+for result in identification_results:
+    # 候補が見つからないときもあります。
+    if not result['candidates']:
+        continue
+
+    # { [faceId]:{[candidatePersonId], [confidence]} }
+    identification_results_dic[result['faceId']] = {
+        'candidatePersonId': result['candidates'][0]['personId'],
+        'confidence': result['candidates'][0]['confidence'],
+    }
+
+# print(identification_results_dic)
+
+# target_images それぞれの画像と candidate を結びつけます。
+# target_image['candidatePersonId'] を埋めるということ。ついでに confidence も追加しよう。
+for _ in target_images:
+    # そもそも顔が detect されなかった(faceId がない)画像であるときもあります。
+    if not _.get('faceId'):
+        continue
+
+    # 候補が見つからなかった(identify の結果に自分の faceId が含まれていない)ときもあります。
+    if _['faceId'] not in identification_results_dic:
+        continue
+
+    candidate_for_this_image = identification_results_dic[_['faceId']]
+    _['candidatePersonId'] = candidate_for_this_image['candidatePersonId']
+    _['confidence'] = candidate_for_this_image['confidence']
+
 # 紐付けの確認。
 for image in target_images:
-    print(image['path'] if 'path' in image else None,
-          '---',
-          image['faceId'] if 'faceId' in image else None)
+    print({
+        'path': image.get('path'),
+        'faceId': image.get('faceId'),
+        'candidatePersonId': image.get('candidatePersonId'),
+        'confidence': image.get('confidence'),
+    })
