@@ -17,6 +17,7 @@ import requests
 import dotenv
 import os
 import json
+import mysql.connector
 from pprint import pprint
 
 
@@ -349,10 +350,92 @@ for _ in target_images:
     _['confidence'] = candidate_for_this_image['confidence']
 
 # 紐付けの確認。
+# for image in target_images:
+#     print({
+#         'path': image.get('path'),
+#         'faceId': image.get('faceId'),
+#         'candidatePersonId': image.get('candidatePersonId'),
+#         'confidence': image.get('confidence'),
+#     })
+
+
+# cognitive services とはもう関係ないけど、 mysql に接続して candidatePersonId の正体をつきとめよう。
+def find_members_by_person_ids(candidate_person_ids: set) -> list:
+
+    MYSQL_HOST = get_env('MYSQL_HOST')
+    MYSQL_PASSWORD = get_env('MYSQL_PASSWORD')
+    MYSQL_USER = get_env('MYSQL_USER')
+    MYSQL_DATABASE = get_env('MYSQL_DATABASE')
+
+    # DB 接続を行います。
+    mysql_connection_config = {
+        'host': MYSQL_HOST,
+        'user': MYSQL_USER,
+        'password': MYSQL_PASSWORD,
+        'database': MYSQL_DATABASE,
+    }
+    connection = mysql.connector.connect(**mysql_connection_config)
+
+    # candidatePersonId ぶんのプレースホルダを作ります。 %s, %s, %s, %s, ...
+    place_holder = ','.join(('%s' for i in range(len(candidate_person_ids))))
+
+    # candidatePersonId が誰なのか取得します。
+    select_sql = ' '.join([
+        'SELECT',
+            'facedata.faceApiPersonId,',
+            'facedata.tmpName,',
+            'facedata.member,',
+            'member.name,',
+            'member.company',
+        'FROM facedata',
+        'LEFT JOIN member',
+            'ON facedata.member = member.id',
+        f'WHERE facedata.faceApiPersonId IN ({place_holder})',
+    ])
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(select_sql, tuple(candidate_person_ids))
+    records = cursor.fetchall()
+    cursor.close()
+
+    # HACK: with ステートメントで書けるようにする。
+    connection.close()
+
+    return records
+
+
+candidate_person_ids = set((
+    _['candidatePersonId']
+    for _ in target_images
+    if _.get('candidatePersonId')
+))
+found_records = find_members_by_person_ids(candidate_person_ids)
+pprint(found_records)
+
+# 次の処理で使いやすいように { [faceApiPersonId]: [member 情報] } 構造にします。
+found_records_dic = {}
+for record in found_records:
+    found_records_dic[record['faceApiPersonId']] = {
+        'company': record['company'],
+        'member': record['member'],
+        'name': record['name'],
+        'tmpName': record['tmpName'],
+    }
+
+# target_images それぞれの画像と member を結びつけます。
+# target_image['member'] を埋めるということ。
+for _ in target_images:
+    # この image と一致した personId は結果にあるか?
+    if _.get('candidatePersonId') not in found_records_dic:
+        continue
+
+    _['member'] = found_records_dic.get(_.get('candidatePersonId'))
+
+# 紐付けの確認。
 for image in target_images:
     print({
         'path': image.get('path'),
-        'faceId': image.get('faceId'),
-        'candidatePersonId': image.get('candidatePersonId'),
+        # 'faceId': image.get('faceId'),
+        # 'candidatePersonId': image.get('candidatePersonId'),
         'confidence': image.get('confidence'),
+        'member': image.get('member'),
     })
