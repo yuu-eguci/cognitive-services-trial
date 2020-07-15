@@ -9,6 +9,7 @@ verify_ssl = true
 opencv-python = "*"
 requests = "*"
 python-dotenv = "*"
+mysql-connector-python = "*"
 
 [requires]
 python_version = "3.7"
