@@ -48,11 +48,16 @@ def _main() -> None:
         else:
             defective_face_images.append(face_image)
     logging.warning(
-        f'有効なレコード件数: {len(face_images)},'
-        f' 無効なレコード件数: {len(defective_face_images)}')
+        f'有効なレコード件数: {len(face_images)}, 無効なレコード件数: {len(defective_face_images)}')  # noqa: E501
 
-    # TODO: face_image = face_image.FaceImage(image_path,
-    #                                         person_id_from_history_log)
+    # 無効なレコードには保留ステータスを付与します。
+    if defective_face_images:
+        with db_client.MySqlClient() as mysql_client:
+            history_face_image_ids = [_.id for _ in defective_face_images]
+            mysql_client.set_pending_status(history_face_image_ids)
+        logging.warning('無効レコードへの保留ステータス付与完了。')
+    else:
+        logging.warning('保留ステータス付与スキップ。無効レコードがないため。')
 
     # 64画像ずつ処理します。
     # TODO: lis[:64]

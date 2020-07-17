@@ -1,5 +1,6 @@
 import mysql.connector
 import const
+import util
 
 
 class MySqlClient:
@@ -26,18 +27,43 @@ class MySqlClient:
 
         select_sql = ' '.join([
             'SELECT',
-                'historyfaceimage.createdAt,',  # noqa: E131
+                'historyfaceimage.id,',  # noqa: E131
+                'historyfaceimage.createdAt,',
                 'historyfaceimage.imagePath,',
                 'facedata.faceApiPersonId',
             'FROM historyfaceimage',
             'LEFT JOIN facedata',
                 'ON historyfaceimage.historyFaceDataId = facedata.id',
             'WHERE',
-                'recognitionStatus = 0',
+                'recognitionStatus = %s',
         ])
         cursor = self.connection.cursor(dictionary=True)
-        cursor.execute(select_sql)
+        cursor.execute(select_sql, (const.WORK_PROGRESS_STATUS['WAITING'],))
         records = cursor.fetchall()
         cursor.close()
 
         return records
+
+    def set_pending_status(self, history_face_image_ids: list) -> None:
+        """HistoryFaceImage に PENDING ステータスを付与します。
+
+        Args:
+            history_face_image_ids (list): HistoryFaceImage.id の一覧。
+        """
+
+        # id 用のプレースホルダです。
+        placeholder = util.get_placeholder(len(history_face_image_ids))
+
+        # [PENDING, id, id, id, ...] です。
+        placeholder_values = [const.WORK_PROGRESS_STATUS['PENDING']]
+        placeholder_values.extend(history_face_image_ids)
+
+        update_sql = ' '.join([
+            'UPDATE historyfaceimage',
+            'SET recognitionStatus = %s',
+            f'WHERE id IN ({placeholder})',
+        ])
+        cursor = self.connection.cursor()
+        cursor.execute(update_sql, tuple(placeholder_values))
+        cursor.close()
+        self.connection.commit()

@@ -1,15 +1,17 @@
 
 class FaceImage:
 
-    def __init__(self, image_path: str, person_id_from_history_log: str):
+    def __init__(self,
+                 id: int,
+                 image_path: str,
+                 person_id_from_history_log: str):
+        self.id = id
         self.image_path = image_path
         self.person_id_from_history_log = person_id_from_history_log
 
     def __repr__(self) -> str:
         return (
-            f"FaceImage('{self.image_path}',"
-            f" '{self.person_id_from_history_log}')"
-        )
+            f"FaceImage({self.id}, '{self.image_path}', '{self.person_id_from_history_log}')")  # noqa: E501
 
     @classmethod
     def from_history_face_image_record(cls, record: dict) -> 'FaceImage':
@@ -19,7 +21,8 @@ class FaceImage:
             FaceImage: インスタンス。
         """
 
-        return cls(record['imagePath'],
+        return cls(record['id'],
+                   record['imagePath'],
                    record['faceApiPersonId'])
 
     def is_valid(self) -> bool:
