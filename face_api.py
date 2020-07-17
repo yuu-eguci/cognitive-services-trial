@@ -1,3 +1,4 @@
+import json
 import requests
 import numpy
 import cv2
@@ -34,4 +35,25 @@ class FaceApiClient:
                                  params=params,
                                  headers=headers,
                                  data=bytes_image)
+        return response.json()
+
+    @classmethod
+    def identify(cls, person_group_id: str, face_ids: list) -> dict:
+
+        url = f'{cls.FACE_API_BASE_URL}/identify'
+        headers = {
+            'Content-Type': 'application/json',
+            'Ocp-Apim-Subscription-Key':
+                const.AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY,
+        }
+        # NOTE: payload は積載物って意味。
+        payload = {
+            'personGroupId': person_group_id,
+            'faceIds': face_ids,
+            'maxNumOfCandidatesReturned': 1,
+            'confidenceThreshold': .65,
+        }
+        response = requests.post(url=url,
+                                 headers=headers,
+                                 data=json.dumps(payload))
         return response.json()

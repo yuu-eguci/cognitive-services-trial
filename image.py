@@ -13,6 +13,10 @@ class FaceImageSet:
     def __init__(self, face_images: list):
         self.face_images = face_images
 
+    def __repr__(self) -> str:
+
+        return [repr(face_image) for face_image in self.face_images]
+
     def identify_by_face_api(self) -> list:
 
         # 実画像を mat で取得します。
@@ -21,17 +25,17 @@ class FaceImageSet:
         # mat を8x8で連結。内部で mat_list は空になります。
         concatenated_mat = self.__concatenate_mat_8x8(mat_list)
 
-        # 顔検出 API にまわし、結果を取得します。
+        # Detection API にまわし、結果を取得します。
         detection_result = face_api.FaceApiClient.detect_mat(concatenated_mat)
 
         # 各 FaceImage に faceId を与えます。
         self.__add_detected_face_ids(detection_result)
 
-        # identify
-
-        # FaceImage & faceId & candidate 紐付け。
+        # Identification API を利用し、各 FaceImage に candidate を与えます。
+        self.__identify_and_add_candidates()
 
         # 各情報が付与された face_images を返却します。
+        return self.face_images
 
     def __get_mat_list(self) -> list:
         """self.face_images の各画像について実画像を mat 形式で取得します。
@@ -94,6 +98,7 @@ class FaceImageSet:
         face_images_2d = util.convert_list_8x8(self.face_images, None)
 
         # faceRectangle の座標をもとに FaceImage.detected_face_id を埋めます。
+        # HACK: detection_result を class 化すればもっと読みやすそう。
         for result in detection_result:
             face_rectangle = result['faceRectangle']
 
@@ -108,29 +113,116 @@ class FaceImageSet:
             target_image = face_images_2d[vertical_index][horizontal_index]
             target_image.detected_face_id = result['faceId']
 
+    def __identify_and_add_candidates(self) -> None:
+        """Identification API を利用し、各 FaceImage に candidate を与えます。
+        HACK: 読みづらすぎるし長いのでリファクタリング。
+        """
+
+        # Identification は person_group_id ごとに行います。
+        # そのため face_images を person_group_id ごとに分けます。
+        face_images_by_person_group_id = {}
+        for face_image in self.face_images:
+            person_group_id = face_image.get_person_group_id()
+            if person_group_id not in face_images_by_person_group_id:
+                face_images_by_person_group_id[person_group_id] = []
+            face_images_by_person_group_id[person_group_id].append(face_image)
+
+        # PersonGroupId ごとに identification API にまわします。
+        for person_group_id, face_images_in_group in face_images_by_person_group_id.items():  # noqa: E501
+            # このグループの画像の faceId 一覧を回収します。
+            face_ids = [
+                face_image.detected_face_id
+                for face_image in face_images_in_group
+                if face_image.detected_face_id
+            ]
+
+            while face_ids:
+
+                # faceId 10件ずつ処理します。
+                # NOTE: Identification API には最大で10件という制限があるため。
+                face_ids_max10 = face_ids[:10]
+                face_ids = face_ids[10:]
+
+                # Identification API にまわし、結果を取得します。
+                identification_result = face_api.FaceApiClient.identify(
+                    person_group_id, face_ids_max10)
+
+                # 各 FaceImage に candidate を与えます。
+                self.__add_candidates(identification_result)
+
+    def __add_candidates(self, identification_result: list) -> None:
+        """FaceImage.candidate_person_id と FaceImage.candidate_confidence を埋めます。
+
+        Args:
+            identification_result (list): Identification 結果。
+        """
+
+        # 次の処理で扱いやすいよう identification_result の構造を変えます。
+        # {faceId: {personId, confidence}}
+        # HACK: identification_result を class 化すればもっと読みやすそう。
+        result_dic = {}
+        for result in identification_result:
+
+            # 候補が見つからないときもあります。
+            if not result['candidates']:
+                continue
+
+            result_dic[result['faceId']] = {
+                'personId': result['candidates'][0]['personId'],
+                'confidence': result['candidates'][0]['confidence'],
+            }
+
+        # 整理したデータをもとに candidate_person_id と candidate_confidence を埋めます。
+        for face_image in self.face_images:
+
+            if face_image.detected_face_id not in result_dic:
+                continue
+
+            face_image.candidate_person_id = result_dic[
+                face_image.detected_face_id]['personId']
+            face_image.candidate_confidence = result_dic[
+                face_image.detected_face_id]['confidence']
+
 
 class FaceImage:
 
     def __init__(self,
                  id: int,
                  image_path: str,
-                 person_id_from_history_log: str):
+                 person_id_from_history_log: str,
+                 detected_face_id: str = None,
+                 candidate_person_id: str = None,
+                 candidate_confidence: float = .0):
         self.id = id
         self.image_path = image_path
         self.person_id_from_history_log = person_id_from_history_log
 
         # Detection によって判明するであろう faceId です。
         # 顔が検出されなかった場合は None のままで、 identification には進みません。
-        self.detected_face_id: str = None
+        self.detected_face_id = detected_face_id
 
         # Identification によって判明するであろう personId です。
         # 顔の候補者が見つからなかった場合は None のままです。
-        self.candidate_person_id: str = None
-        self.candidate_confidence: float = .0
+        self.candidate_person_id = candidate_person_id
+        self.candidate_confidence = candidate_confidence
 
     def __repr__(self) -> str:
+
+        return ('FaceImage(%s, %s, %s, %s, %s, %s,)' % (
+            self.id,
+            f"'{self.image_path}'"
+            if self.image_path else 'None',
+            f"'{self.person_id_from_history_log}'"
+            if self.person_id_from_history_log else 'None',
+            f"'{self.detected_face_id}'"
+            if self.detected_face_id else 'None',
+            f"'{self.candidate_person_id}'"
+            if self.candidate_person_id else 'None',
+            self.candidate_confidence,
+        ))
+
         return (
-            f"FaceImage({self.id}, '{self.image_path}', '{self.person_id_from_history_log}')")  # noqa: E501
+            f"FaceImage({self.id}, '{self.image_path}', '{self.person_id_from_history_log}', detected_face_id='{self.detected_face_id}', candidate_person_id='{self.candidate_person_id}', candidate_confidence={self.candidate_confidence})")  # noqa: E501
 
     @classmethod
     def from_history_face_image_record(cls, record: dict) -> 'FaceImage':
@@ -162,3 +254,19 @@ class FaceImage:
         """
 
         return filter(lambda _: _, self.image_path.split('/'))
+
+    def get_person_group_id(self) -> str:
+        """この画像の PersonGroupId を取得します。
+        container_name がそれに該当します。
+
+        Returns:
+            str: PersonGroupId。
+        """
+
+        container_name, blob_name = (self.get_container_and_blob_names())
+
+        # NOTE: テストのためだけの処理です。コンテナ名 qrj3ntb8eh9z は icsoft として扱います。
+        if container_name == 'qrj3ntb8eh9z':
+            return 'icsoft'
+
+        return container_name

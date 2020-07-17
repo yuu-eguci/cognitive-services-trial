@@ -61,19 +61,24 @@ def _main() -> None:
     else:
         logging.warning('保留ステータス付与スキップ。無効レコードがないため。')
 
+    # Identification 処理の完了した FaceImage を格納します。
+    identified_face_images = []
+
     while face_images:
 
         # 64画像ずつ処理します。
-        images_under64 = face_images[:64]
+        images_max64 = face_images[:64]
         face_images = face_images[64:]
         logging.warning(f'残り{len(face_images)}個。')
 
         # 64画像はセットで扱います。
-        face_image_set = image.FaceImageSet(images_under64)
+        face_image_set = image.FaceImageSet(images_max64)
 
-        # Identification を行います。FaceImage.candidate_person_id を取得します。
+        # Identification を行います。
         # (画像の連結、 FaceAPI による detection、同じく identification すべて行います。)
         identified_face_images = face_image_set.identify_by_face_api()
+
+        logging.warning(identified_face_images)
 
         # 結果をもって、 HistoryFaceImage レコードを更新します。
         # TODO: mysql_client.update_history_face_image()
