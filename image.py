@@ -1,4 +1,10 @@
 
+class FaceImageSet:
+
+    def __init__(self, face_images: list):
+        self.face_images = face_images
+
+
 class FaceImage:
 
     def __init__(self,
@@ -8,6 +14,15 @@ class FaceImage:
         self.id = id
         self.image_path = image_path
         self.person_id_from_history_log = person_id_from_history_log
+
+        # Detection によって判明するであろう faceId です。
+        # 顔が検出されなかった場合は None のままで、 identification には進みません。
+        self.detected_face_id = None
+
+        # Identification によって判明するであろう personId です。
+        # 顔の候補者が見つからなかった場合は None のままです。
+        self.candidate_person_id = None
+        self.candidate_confidence = 0
 
     def __repr__(self) -> str:
         return (

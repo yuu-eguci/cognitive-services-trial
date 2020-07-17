@@ -69,7 +69,7 @@ def _main() -> None:
         logging.warning(f'残り{len(face_images)}個。')
 
         # 64画像はセットで扱います。
-        # TODO: face_image_set = FaceImageSet(face_images)
+        face_image_set = image.FaceImageSet(images_under64)
 
         # Identification を行います。FaceImage.candidate_person_id を取得します。
         # (画像の連結、 FaceAPI による detection、同じく identification すべて行います。)
