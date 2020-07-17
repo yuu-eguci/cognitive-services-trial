@@ -4,6 +4,7 @@ import cv2
 from azure.storage.blob import BlobServiceClient
 
 import const
+import util
 import face_api
 
 
@@ -74,16 +75,13 @@ class FaceImageSet:
 
         # 画像が64枚に満たないときのための空白画像です。
         blank_mat = numpy.ones((100, 100, 3), numpy.uint8) * 255
-        list_1d.extend([blank_mat] * (64 - len(list_1d)))
 
-        # 8x8の2次元配列です。
-        list_2d = [[] for i in range(8)]
-        for v in range(8):
-            for h in range(8):
-                list_2d[v].append(list_1d.pop(0))
+        # 8x8の2次元配列に変換します。元のリストは破壊して OK です。
+        list_2d = util.convert_list_8x8_pop(list_1d, blank_mat)
 
         # mat の1次元配列を受け取り、タイル状に連結します。
         return cv2.vconcat([cv2.hconcat(list_1d) for list_1d in list_2d])
+
 
 class FaceImage:
 
