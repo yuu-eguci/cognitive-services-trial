@@ -7,7 +7,10 @@
 
 """
 
+# Built-in modules.
 import logging
+
+# My modules.
 import db_client
 import image
 

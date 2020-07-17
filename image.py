@@ -1,8 +1,10 @@
 
+# Third-party modules.
 import numpy
 import cv2
 from azure.storage.blob import BlobServiceClient
 
+# My modules.
 import const
 import util
 import face_api

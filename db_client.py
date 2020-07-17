@@ -1,4 +1,8 @@
+
+# Third-party modules.
 import mysql.connector
+
+# My modules.
 import const
 import util
 

@@ -1,5 +1,9 @@
-import dotenv
+
+# Built-in modules.
 import os
+
+# Third-party modules.
+import dotenv
 
 
 # .env で環境変数を取得する場合に対応します。

@@ -1,7 +1,13 @@
+
+# Built-in modules.
 import json
+
+# Third-party modules.
 import requests
 import numpy
 import cv2
+
+# My modules.
 import const
 
 
