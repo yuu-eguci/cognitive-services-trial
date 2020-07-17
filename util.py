@@ -13,22 +13,7 @@ def get_placeholder(count: int) -> str:
     return ','.join(('%s' for i in range(count)))
 
 
-def convert_list_8x8_pop(list_1d: list, blank: object) -> list:
-    """1次元リストを8x8の2次元リストに変換します。
-    元のリストは pop により破壊されます。
-
-    Args:
-        list_1d (list): 1次元リスト。
-        blank (object): 空きスペースに置くオブジェクト。
-
-    Returns:
-        list: 2次元リスト。
-    """
-
-    return convert_list_8x8(list_1d, blank, True)
-
-
-def convert_list_8x8(list_1d: list, blank: object, use_pop: bool) -> list:
+def convert_list_8x8(list_1d: list, blank: object) -> list:
     """1次元リストを8x8の2次元リストに変換します。
 
     Args:
@@ -45,11 +30,8 @@ def convert_list_8x8(list_1d: list, blank: object, use_pop: bool) -> list:
     i = 0
     for v in range(8):
         for h in range(8):
-            if use_pop:
-                list_2d[v].append(list_1d.pop(0))
-            else:
-                list_2d[v].append(list_1d[i])
-                i += 1
+            list_2d[v].append(list_1d[i])
+            i += 1
     return list_2d
 
 
@@ -60,7 +42,7 @@ if __name__ == '__main__':
     expected = '%s,%s,%s,%s,%s'
     assert actual == expected
 
-    actual = convert_list_8x8_pop([i for i in range(1, 60)], 0)
+    actual = convert_list_8x8([i for i in range(1, 60)], 0)
     expected = [
         [1, 2, 3, 4, 5, 6, 7, 8],
         [9, 10, 11, 12, 13, 14, 15, 16],

@@ -24,7 +24,8 @@ class FaceImageSet:
         # 顔検出 API にまわし、結果を取得します。
         detection_result = face_api.FaceApiClient.detect_mat(concatenated_mat)
 
-        # FaceImage & faceId 紐付け。
+        # 各 FaceImage に faceId を与えます。
+        self.__add_detected_face_ids(detection_result)
 
         # identify
 
@@ -76,11 +77,36 @@ class FaceImageSet:
         # 画像が64枚に満たないときのための空白画像です。
         blank_mat = numpy.ones((100, 100, 3), numpy.uint8) * 255
 
-        # 8x8の2次元配列に変換します。元のリストは破壊して OK です。
-        list_2d = util.convert_list_8x8_pop(list_1d, blank_mat)
+        # 8x8の2次元配列に変換します。
+        list_2d = util.convert_list_8x8(list_1d, blank_mat)
 
         # mat の1次元配列を受け取り、タイル状に連結します。
         return cv2.vconcat([cv2.hconcat(list_1d) for list_1d in list_2d])
+
+    def __add_detected_face_ids(self, detection_result: list) -> None:
+        """FaceImage.detected_face_id を埋めます。
+
+        Args:
+            detection_result (list): Detection 結果。
+        """
+
+        # 画像の一覧を一時的に2次元配列にします。
+        face_images_2d = util.convert_list_8x8(self.face_images, None)
+
+        # faceRectangle の座標をもとに FaceImage.detected_face_id を埋めます。
+        for result in detection_result:
+            face_rectangle = result['faceRectangle']
+
+            # x 軸で何番目の画像?
+            # NOTE: 画像サイズが100x100 なので、
+            # NOTE: 左上の x 座標 / 100 で切り捨て除算を行えば、 x 軸のインデックスになります。
+            horizontal_index = face_rectangle['left'] // 100
+            # y 軸で何番目の画像?
+            vertical_index = face_rectangle['top'] // 100
+
+            # 座標から求めた、この faceId に対応する画像です。
+            target_image = face_images_2d[vertical_index][horizontal_index]
+            target_image.detected_face_id = result['faceId']
 
 
 class FaceImage:
