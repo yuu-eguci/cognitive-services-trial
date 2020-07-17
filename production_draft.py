@@ -73,7 +73,7 @@ def _main() -> None:
 
         # Identification を行います。FaceImage.candidate_person_id を取得します。
         # (画像の連結、 FaceAPI による detection、同じく identification すべて行います。)
-        # TODO: identified_face_images = face_image_set.identify_by_face_api()
+        identified_face_images = face_image_set.identify_by_face_api()
 
         # 結果をもって、 HistoryFaceImage レコードを更新します。
         # TODO: mysql_client.update_history_face_image()
