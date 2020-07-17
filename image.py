@@ -16,6 +16,7 @@ class FaceImageSet:
         mat_list = self.__get_mat_list()
 
         # mat を8x8で連結。
+        concatenated_mat = self.__concatenate_mat_8x8(mat_list)
 
         # detect
 
@@ -27,9 +28,11 @@ class FaceImageSet:
 
         # 各情報が付与された face_images を返却します。
 
-    def __get_mat_list(self):
+    def __get_mat_list(self) -> list:
         """self.face_images の各画像について実画像を mat 形式で取得します。
-        ジェネレータです。リストを返却しません。
+
+        Returns:
+            list: mat 形式の画像のリスト。
         """
 
         # BlobServiceClient を作成します。
@@ -55,6 +58,29 @@ class FaceImageSet:
             downloaded_mat = cv2.imdecode(downloaded_ndarray, cv2.IMREAD_COLOR)
             mat_list.append(downloaded_mat)
         return mat_list
+
+    def __concatenate_mat_8x8(self, list_1d: list) -> numpy.ndarray:
+        """画像の一覧を連結し8x8の mat 形式で取得します。
+
+        Args:
+            list_1d (list): mat 形式の画像のリスト。64枚なくても大丈夫です。
+
+        Returns:
+            numpy.ndarray: 連結したひとつの mat 画像。
+        """
+
+        # 画像が64枚に満たないときのための空白画像です。
+        blank_mat = numpy.ones((100, 100, 3), numpy.uint8) * 255
+        list_1d.extend([blank_mat] * (64 - len(list_1d)))
+
+        # 8x8の2次元配列です。
+        list_2d = [[] for i in range(8)]
+        for v in range(8):
+            for h in range(8):
+                list_2d[v].append(list_1d.pop(0))
+
+        # mat の1次元配列を受け取り、タイル状に連結します。
+        return cv2.vconcat([cv2.hconcat(list_1d) for list_1d in list_2d])
 
 
 class FaceImage:
