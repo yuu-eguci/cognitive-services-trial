@@ -61,18 +61,22 @@ def _main() -> None:
     else:
         logging.warning('保留ステータス付与スキップ。無効レコードがないため。')
 
-    # 64画像ずつ処理します。
-    # TODO: lis[:64]
+    while face_images:
 
-    # 64画像はセットで扱います。
-    # TODO: face_image_set = FaceImageSet(face_images)
+        # 64画像ずつ処理します。
+        images_under64 = face_images[:64]
+        face_images = face_images[64:]
+        logging.warning(f'残り{len(face_images)}個。')
 
-    # Identification を行います。FaceImage.candidate_person_id を取得します。
-    # (画像の連結、 FaceAPI による detection、同じく identification すべて行います。)
-    # TODO: identified_face_images = face_image_set.identify_by_face_api()
+        # 64画像はセットで扱います。
+        # TODO: face_image_set = FaceImageSet(face_images)
 
-    # 結果をもって、 HistoryFaceImage レコードを更新します。
-    # TODO: mysql_client.update_history_face_image()
+        # Identification を行います。FaceImage.candidate_person_id を取得します。
+        # (画像の連結、 FaceAPI による detection、同じく identification すべて行います。)
+        # TODO: identified_face_images = face_image_set.identify_by_face_api()
+
+        # 結果をもって、 HistoryFaceImage レコードを更新します。
+        # TODO: mysql_client.update_history_face_image()
 
 
 if __name__ == '__main__':
