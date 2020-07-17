@@ -25,13 +25,15 @@ def convert_list_8x8(list_1d: list, blank: object) -> list:
         list: 2次元リスト。
     """
 
-    list_1d.extend([blank] * (64 - len(list_1d)))
     list_2d = [[] for i in range(8)]
     i = 0
     for v in range(8):
         for h in range(8):
-            list_2d[v].append(list_1d[i])
-            i += 1
+            if i < len(list_1d):
+                list_2d[v].append(list_1d[i])
+                i += 1
+            else:
+                list_2d[v].append(blank)
     return list_2d
 
 
