@@ -8,6 +8,7 @@
 """
 
 import logging
+import db_client
 
 
 # ローカル環境ではコレを書かないと logging.*** は機能しません。
@@ -16,10 +17,28 @@ logging.basicConfig(level=logging.DEBUG)
 
 def main() -> None:
 
+    logging.warning(
+        'taskal-history-face-image-recognition-function-app 処理開始。')
+
+    try:
+        _main()
+    except Exception:
+        logging.exception('エラーが発生しました。')
+
+    logging.warning(
+        'taskal-history-face-image-recognition-function-app 処理終了。')
+
+
+def _main() -> None:
+
     # 未処理の HistoryFaceImage レコードを DB から取得します。
-    # TODO: mysql_client = mysql_client.MySqlClient()
-    # TODO: mysql_client.find_waiting_images()
-    logging.warning('未処理の HistoryFaceImage レコードを DB から取得しました。件数: n')
+    with db_client.MySqlClient() as mysql_client:
+        records = mysql_client.find_waiting_images()
+        logging.warning(
+            f'未処理の HistoryFaceImage レコードを DB から取得しました。件数: {len(records)}')
+        logging.warning(records[0])
+
+    # 保留ステータスを欠陥レコードに付与します。
 
     # 64画像ずつ処理します。
     # TODO: lis[:64]
@@ -37,9 +56,6 @@ def main() -> None:
 
     # 結果をもって、 HistoryFaceImage レコードを更新します。
     # TODO: mysql_client.update_history_face_image()
-
-    logging.warning(
-        'taskal-history-face-image-recognition-function-app 処理終了です。')
 
 
 if __name__ == '__main__':
