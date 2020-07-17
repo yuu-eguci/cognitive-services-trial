@@ -2,7 +2,9 @@
 import numpy
 import cv2
 from azure.storage.blob import BlobServiceClient
+
 import const
+import face_api
 
 
 class FaceImageSet:
@@ -15,10 +17,11 @@ class FaceImageSet:
         # 実画像を mat で取得します。
         mat_list = self.__get_mat_list()
 
-        # mat を8x8で連結。
+        # mat を8x8で連結。内部で mat_list は空になります。
         concatenated_mat = self.__concatenate_mat_8x8(mat_list)
 
-        # detect
+        # 顔検出 API にまわし、結果を取得します。
+        detection_result = face_api.FaceApiClient.detect_mat(concatenated_mat)
 
         # FaceImage & faceId 紐付け。
 
@@ -81,7 +84,6 @@ class FaceImageSet:
 
         # mat の1次元配列を受け取り、タイル状に連結します。
         return cv2.vconcat([cv2.hconcat(list_1d) for list_1d in list_2d])
-
 
 class FaceImage:
 
