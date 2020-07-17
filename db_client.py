@@ -71,3 +71,35 @@ class MySqlClient:
         cursor.execute(update_sql, tuple(placeholder_values))
         cursor.close()
         self.connection.commit()
+
+    def set_completed_status(self,
+                             matched: bool,
+                             candidate_person_id: str,
+                             candidate_confidence: float,
+                             history_face_image_id: int):
+        """HistoryFaceImage に COMPLETED ステータスを付与します。
+
+        Args:
+            matched (bool): HistoryFaceImage.matched の値。
+            candidate_person_id (str): .candidatePersonId の値。
+            candidate_confidence (float): .candidateConfidence の値。
+            history_face_image_id (int): .id の値。
+        """
+
+        update_sql = ' '.join([
+            'UPDATE historyfaceimage',
+            'SET',
+                'recognitionStatus = %s,',  # noqa: E131
+                'matched = %s,',
+                'candidatePersonId = %s,',
+                'candidateConfidence = %s',
+            'WHERE id = %s',
+        ])
+        cursor = self.connection.cursor()
+        cursor.execute(update_sql, (const.WORK_PROGRESS_STATUS['COMPLETED'],
+                                    matched,
+                                    candidate_person_id,
+                                    candidate_confidence,
+                                    history_face_image_id))
+        cursor.close()
+        self.connection.commit()

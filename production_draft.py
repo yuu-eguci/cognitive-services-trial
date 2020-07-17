@@ -65,7 +65,7 @@ def _main() -> None:
         logging.warning('保留ステータス付与スキップ。無効レコードがないため。')
 
     # Identification 処理の完了した FaceImage を格納します。
-    identified_face_images = []
+    identified_face_images_all = []
 
     while face_images:
 
@@ -81,10 +81,25 @@ def _main() -> None:
         # (画像の連結、 FaceAPI による detection、同じく identification すべて行います。)
         identified_face_images = face_image_set.identify_by_face_api()
 
-        logging.warning(identified_face_images)
+        # 別のリストに格納します。 while 外で一気に DB 更新を行うためです。
+        identified_face_images_all.extend(identified_face_images)
 
-        # 結果をもって、 HistoryFaceImage レコードを更新します。
-        # TODO: mysql_client.update_history_face_image()
+    # 結果をもって、 HistoryFaceImage レコードを更新します。
+    if not identified_face_images_all:
+        return
+    with db_client.MySqlClient() as mysql_client:
+
+        for face_image in identified_face_images_all:
+            mysql_client.set_completed_status(
+                face_image.matched(),
+                face_image.candidate_person_id,
+                face_image.candidate_confidence,
+                face_image.id,
+            )
+            logging.warning(
+                f'UPDATE 完了: {face_image}, matched={face_image.matched()}')
+
+        logging.warning('レコードへの処理済みステータス付与完了。')
 
 
 if __name__ == '__main__':

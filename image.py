@@ -272,3 +272,20 @@ class FaceImage:
             return 'icsoft'
 
         return container_name
+
+    def matched(self) -> bool:
+        """person_id_from_history_log と candidate_person_id が一致している。
+        かつ、十分な確信度がある。
+
+        Returns:
+            bool: person_id_from_history_log == candidate_person_id
+        """
+
+        if self.person_id_from_history_log is None:
+            return False
+
+        person_id_is_matched = (
+            self.person_id_from_history_log == self.candidate_person_id)
+        has_enough_confidence = self.candidate_confidence >= .78
+
+        return person_id_is_matched and has_enough_confidence
