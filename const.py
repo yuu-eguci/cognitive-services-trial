@@ -26,6 +26,7 @@ def _get_env(keyname: str) -> str:
     return _
 
 
+# 環境変数から取得する定数です。
 AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY = _get_env(
     'AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY')
 PERSON_GROUP_ID = _get_env('PERSON_GROUP_ID')
@@ -34,6 +35,14 @@ MYSQL_PASSWORD = _get_env('MYSQL_PASSWORD')
 MYSQL_USER = _get_env('MYSQL_USER')
 MYSQL_DATABASE = _get_env('MYSQL_DATABASE')
 AZURE_STORAGE_CONNECTION_STRING = _get_env('AZURE_STORAGE_CONNECTION_STRING')
+
+# HistoryFaceImage.recognitionStatus の値です。
+WORK_PROGRESS_STATUS = {
+    'WAITING': 0,
+    'WORKING': 1,
+    'COMPLETED': 2,
+    'PENDING': 3,
+}
 
 if __name__ == '__main__':
     print(AZURE_COGNITIVE_SERVICES_SUBSCRIPTION_KEY)
