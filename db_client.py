@@ -92,7 +92,8 @@ class MySqlClient:
                 'recognitionStatus = %s,',  # noqa: E131
                 'matched = %s,',
                 'candidatePersonId = %s,',
-                'candidateConfidence = %s',
+                'candidateConfidence = %s,',
+                "updatedAt = DATE_FORMAT(NOW(), '%Y-%m-%dT%H:%i:00.000Z')",
             'WHERE id = %s',
         ])
         cursor = self.connection.cursor()
