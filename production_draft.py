@@ -25,9 +25,11 @@ def main() -> None:
         _main()
     except Exception:
         logging.exception('エラーが発生しました。')
-
-    logging.warning(
-        'taskal-history-face-image-recognition-function-app 処理終了。')
+        logging.error(
+            'taskal-history-face-image-recognition-function-app 異常終了。')
+    else:
+        logging.warning(
+            'taskal-history-face-image-recognition-function-app 正常終了。')
 
 
 def _main() -> None:
