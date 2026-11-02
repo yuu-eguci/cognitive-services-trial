@@ -17,14 +17,14 @@ class FaceImageSet:
 
     def __repr__(self) -> str:
 
-        return [repr(face_image) for face_image in self.face_images]
+        return f'FaceImageSet({self.face_images!r})'
 
     def identify_by_face_api(self) -> list:
 
         # 実画像を mat で取得します。
         mat_list = self.__get_mat_list()
 
-        # mat を8x8で連結。内部で mat_list は空になります。
+        # mat を8x8で連結。
         concatenated_mat = self.__concatenate_mat_8x8(mat_list)
 
         # Detection API にまわし、結果を取得します。
@@ -223,9 +223,6 @@ class FaceImage:
             self.candidate_confidence,
         ))
 
-        return (
-            f"FaceImage({self.id}, '{self.image_path}', '{self.person_id_from_history_log}', detected_face_id='{self.detected_face_id}', candidate_person_id='{self.candidate_person_id}', candidate_confidence={self.candidate_confidence})")  # noqa: E501
-
     @classmethod
     def from_history_face_image_record(cls, record: dict) -> 'FaceImage':
         """HistoryFaceImage のレコードから FaceImage インスタンスを生成します。
@@ -246,7 +243,7 @@ class FaceImage:
             bool: Detection と identification のできる FaceImage である。
         """
 
-        return self.image_path and self.person_id_from_history_log
+        return bool(self.image_path and self.person_id_from_history_log)
 
     def get_container_and_blob_names(self) -> iter:
         """/container_name/blob_name を分解して取得します。

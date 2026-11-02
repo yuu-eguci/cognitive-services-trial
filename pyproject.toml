@@ -24,7 +24,7 @@ package = false
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "B"]
+select = ["E", "F", "W", "B", "S113"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

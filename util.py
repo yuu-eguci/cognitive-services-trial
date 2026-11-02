@@ -19,7 +19,6 @@ def convert_list_8x8(list_1d: list, blank: object) -> list:
     Args:
         list_1d (list): 1次元リスト。
         blank (object): 空きスペースに置くオブジェクト。
-        use_pop (bool): もとの1次元リストは空にする。
 
     Returns:
         list: 2次元リスト。

@@ -11,6 +11,9 @@ import cv2
 import const
 
 
+TIMEOUT_SECONDS = 30
+
+
 class FaceApiClient:
 
     FACE_API_BASE_URL = 'https://japaneast.api.cognitive.microsoft.com/face/v1.0'  # noqa: E501
@@ -40,7 +43,9 @@ class FaceApiClient:
         response = requests.post(url=url,
                                  params=params,
                                  headers=headers,
-                                 data=bytes_image)
+                                 data=bytes_image,
+                                 timeout=TIMEOUT_SECONDS)
+        response.raise_for_status()
         return response.json()
 
     @classmethod
@@ -61,5 +66,7 @@ class FaceApiClient:
         }
         response = requests.post(url=url,
                                  headers=headers,
-                                 data=json.dumps(payload))
+                                 data=json.dumps(payload),
+                                 timeout=TIMEOUT_SECONDS)
+        response.raise_for_status()
         return response.json()
