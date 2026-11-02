@@ -137,7 +137,7 @@ mat_list_2d = []
 for vertical_index in range(4):
     target_images_2d.append([])
     mat_list_2d.append([])
-    for horizontal_index in range(4):
+    for _horizontal_index in range(4):
         # 空きマスにもブランク画像を
         _ = target_images.pop(0) if len(target_images) else blank_image
         target_images_2d[vertical_index].append(_)
