@@ -1,0 +1,9 @@
+# Allowlist: only what the image needs (keeps .env and local files out).
+*
+!.python-version
+!pyproject.toml
+!uv.lock
+!*.py
+!*.png
+!tests/
+tests/**/__pycache__

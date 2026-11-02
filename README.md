@@ -7,6 +7,7 @@ Face API once for detection, and then identified per PersonGroup.
 
 ## Status
 
+- Docker: 対応!
 - Python: 3.14
 - Linter: ruff 0.17
 - Test: pytest 9.2
@@ -47,6 +48,16 @@ AZURE_STORAGE_CONNECTION_STRING=***
 ```bash
 uv run python production_draft.py
 ```
+
+## Docker
+
+```bash
+docker build -t cognitive-services-trial .
+docker run --rm cognitive-services-trial pytest
+docker run --rm --env-file .env cognitive-services-trial
+```
+
+The image runs `production_draft.py` by default. The GUI scripts (`trial.py`, `with_azure_blob_storage.py`) are meant for local use, not for the container.
 
 ## Development
 
