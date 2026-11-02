@@ -175,7 +175,8 @@ def face_api_detect(bytes_image: bytes) -> dict:
     response = requests.post(url=url,
                              params=params,
                              headers=headers,
-                             data=bytes_image)
+                             data=bytes_image,
+                             timeout=30)
     return response.json()
 
 
@@ -280,7 +281,8 @@ def face_api_identify(face_ids: list) -> dict:
     }
     response = requests.post(url=url,
                              headers=headers,
-                             data=json.dumps(payload))
+                             data=json.dumps(payload),
+                             timeout=30)
     return response.json()
 
 

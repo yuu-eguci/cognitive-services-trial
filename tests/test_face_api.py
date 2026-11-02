@@ -2,6 +2,8 @@ import json
 from unittest import mock
 
 import numpy
+import pytest
+import requests
 
 import face_api
 
@@ -50,3 +52,27 @@ def test_identify_posts_json_payload():
         'maxNumOfCandidatesReturned': 1,
         'confidenceThreshold': .65,
     }
+
+
+@pytest.mark.parametrize('call', [
+    lambda: face_api.FaceApiClient.detect(b'png-bytes'),
+    lambda: face_api.FaceApiClient.identify('group', ['f1']),
+])
+def test_requests_use_timeout(call):
+    with mock.patch.object(face_api.requests, 'post') as post:
+        call()
+
+    assert post.call_args.kwargs['timeout'] == face_api.TIMEOUT_SECONDS
+
+
+@pytest.mark.parametrize('call', [
+    lambda: face_api.FaceApiClient.detect(b'png-bytes'),
+    lambda: face_api.FaceApiClient.identify('group', ['f1']),
+])
+def test_api_error_raises(call):
+    with mock.patch.object(face_api.requests, 'post') as post:
+        post.return_value.raise_for_status.side_effect = (
+            requests.HTTPError('401'))
+
+        with pytest.raises(requests.HTTPError):
+            call()

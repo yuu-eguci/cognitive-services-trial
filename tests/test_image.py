@@ -28,7 +28,7 @@ def test_from_history_face_image_record():
     ('/group/a.png', None, False),
 ])
 def test_is_valid(path, person_id, expected):
-    assert bool(image.FaceImage(1, path, person_id).is_valid()) is expected
+    assert image.FaceImage(1, path, person_id).is_valid() is expected
 
 
 @pytest.mark.parametrize('path, expected', [
@@ -100,3 +100,17 @@ def test_identify_by_face_api_maps_results_to_images():
     assert result[1].candidate_person_id == 'p1'
     assert result[1].candidate_confidence == .9
     assert result[11].candidate_person_id is None
+
+
+def test_face_image_repr():
+    face_image = make_face_image(1, detected_face_id='f1')
+
+    assert repr(face_image) == (
+        "FaceImage(1, '/group/a.png', 'p1', 'f1', None, 0.0,)")
+
+
+def test_face_image_set_repr():
+    face_images = [make_face_image(1), make_face_image(2)]
+
+    assert repr(image.FaceImageSet(face_images)) == (
+        f'FaceImageSet({face_images!r})')
